@@ -3,143 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>FinançaMaster | Sistema Financeiro Acessível</title>
+    <title>FinançaMaster | Sistema Financeiro Completo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="light">
+<body>
+    <!-- Tela de Login/Cadastro -->
     <div class="auth-overlay" id="authOverlay">
         <div class="auth-container">
             <div class="auth-tabs">
                 <button class="auth-tab active" data-auth="login">🔐 Entrar</button>
                 <button class="auth-tab" data-auth="register">📝 Cadastrar</button>
             </div>
+            
+            <!-- Formulário de Login -->
             <div id="loginForm" class="auth-form active-form">
                 <div class="input-group"><label>📧 E-mail</label><input type="email" id="loginEmail" placeholder="seu@email.com"></div>
                 <div class="input-group"><label>🔒 Senha</label><input type="password" id="loginSenha" placeholder="********"></div>
-                <button class="auth-btn" id="btnLoginSubmit">Entrar</button>
+                <button class="auth-btn" id="btnLoginSubmit">Entrar no Sistema</button>
                 <div id="loginError" class="error-msg"></div>
-                <div style="text-align:center; margin-top:20px;">Demo: demo@financamaster.com / 123456</div>
+                <div style="text-align:center; margin-top:20px; font-size:0.8rem; color:var(--text-secondary);">Demo: demo@financamaster.com / 123456</div>
             </div>
+            
+            <!-- Formulário de Cadastro -->
             <div id="registerForm" class="auth-form">
-                <div class="input-group"><label>👤 Nome</label><input type="text" id="regNome"></div>
-                <div class="input-group"><label>📧 E-mail</label><input type="email" id="regEmail"></div>
-                <div class="input-group"><label>🔒 Senha</label><input type="password" id="regSenha"></div>
-                <div class="input-group"><label>🔒 Confirmar</label><input type="password" id="regConfirmSenha"></div>
+                <div class="input-group"><label>👤 Nome Completo</label><input type="text" id="regNome" placeholder="Seu nome"></div>
+                <div class="input-group"><label>📧 E-mail</label><input type="email" id="regEmail" placeholder="seu@email.com"></div>
+                <div class="input-group"><label>🔒 Senha</label><input type="password" id="regSenha" placeholder="Mínimo 6 caracteres"></div>
+                <div class="input-group"><label>🔒 Confirmar Senha</label><input type="password" id="regConfirmSenha" placeholder="Digite novamente"></div>
                 <button class="auth-btn" id="btnRegisterSubmit">Criar Conta</button>
                 <div id="registerError" class="error-msg"></div>
             </div>
         </div>
     </div>
 
+    <!-- App Principal -->
     <div class="app-container" id="appContainer">
         <div class="main-header">
             <div class="header-content">
                 <div class="logo-area"><h1><i class="fas fa-chart-line"></i> FinançaMaster</h1></div>
                 <div class="header-actions">
-                    <button class="action-btn hide-balance-btn" id="toggleBalanceBtn"><i class="fas fa-eye-slash"></i> Ocultar</button>
-                    <button class="action-btn theme-btn" id="themeToggle"><i class="fas fa-palette"></i> Tema</button>
-                    <button class="action-btn accessibility-btn" id="accessibilityToggle"><i class="fas fa-universal-access"></i> Acessibilidade</button>
-                    <div class="user-info">
-                        <div class="user-avatar">👤</div>
-                        <span id="userName">Usuário</span>
-                    </div>
+                    <button class="accessibility-btn" id="accessibilityBtn"><i class="fas fa-universal-access"></i> Acessibilidade</button>
+                    <button class="hide-balance-btn" id="toggleBalanceBtn"><i class="fas fa-eye-slash"></i> Ocultar Saldos</button>
+                    <div class="user-info"><div class="user-avatar" id="userAvatar">👤</div><span id="userName">Usuário</span></div>
                     <button class="logout-btn" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Sair</button>
                 </div>
             </div>
             <div class="stats-bar">
-                <div class="stat-card"><div class="label">💰 Saldo Atual</div><div class="value" id="saldoAtual">R$ 0,00</div></div>
-                <div class="stat-card"><div class="label">📈 Receitas</div><div class="value" id="totalReceitas">R$ 0,00</div></div>
-                <div class="stat-card"><div class="label">📉 Despesas</div><div class="value" id="totalDespesas">R$ 0,00</div></div>
+                <div class="stat-card"><div class="label">💰 Saldo Total</div><div class="value" id="saldoTotal">R$ 0,00</div></div>
+                <div class="stat-card"><div class="label">📈 Receitas</div><div class="value" id="totalReceitas" style="color:var(--success);">R$ 0,00</div></div>
+                <div class="stat-card"><div class="label">📉 Despesas</div><div class="value" id="totalDespesas" style="color:var(--danger);">R$ 0,00</div></div>
+                <div class="stat-card"><div class="label">💎 Patrimônio</div><div class="value" id="totalPatrimonio">R$ 0,00</div></div>
             </div>
-            <div class="nav-menu">
-                <div class="nav-items">
-                    <button class="nav-item active" data-screen="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
-                    <button class="nav-item" data-screen="receitas"><i class="fas fa-hand-holding-usd"></i> Receitas</button>
-                    <button class="nav-item" data-screen="despesas"><i class="fas fa-shopping-cart"></i> Despesas</button>
-                    <button class="nav-item" data-screen="investimentos"><i class="fas fa-chart-pie"></i> Investimentos</button>
-                    <button class="nav-item" data-screen="dependentes"><i class="fas fa-users"></i> Dependentes</button>
-                    <button class="nav-item" data-screen="balancete"><i class="fas fa-balance-scale"></i> Balancete</button>
-                    <button class="nav-item" data-screen="contato"><i class="fas fa-envelope"></i> Contato</button>
-                </div>
-            </div>
+            <div class="nav-menu"><div class="nav-items">
+                <button class="nav-item active" data-screen="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+                <button class="nav-item" data-screen="receitas"><i class="fas fa-hand-holding-usd"></i> Receitas</button>
+                <button class="nav-item" data-screen="despesas"><i class="fas fa-shopping-cart"></i> Despesas</button>
+                <button class="nav-item" data-screen="investimentos"><i class="fas fa-chart-pie"></i> Investimentos + Bolsa</button>
+                <button class="nav-item" data-screen="dependentes"><i class="fas fa-users"></i> Dependentes</button>
+                <button class="nav-item" data-screen="balancete"><i class="fas fa-balance-scale"></i> Balancete</button>
+                <button class="nav-item" data-screen="contato"><i class="fas fa-envelope"></i> Contato</button>
+            </div></div>
         </div>
 
-        <!-- Dashboard Screen -->
+        <!-- Painel de Acessibilidade -->
+        <div id="accessibilityPanel" style="display:none; position:fixed; bottom:20px; right:20px; background:var(--bg-card); border:2px solid var(--accent-start); border-radius:20px; padding:16px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.2); width:280px;">
+            <h4 style="margin-bottom:12px; color:var(--text-primary);"><i class="fas fa-universal-access"></i> Acessibilidade</h4>
+            <button id="increaseFontBtn" class="btn-primary" style="width:100%; margin-bottom:8px;"><i class="fas fa-search-plus"></i> Aumentar Fonte</button>
+            <button id="resetFontBtn" class="btn-primary" style="width:100%; margin-bottom:8px;"><i class="fas fa-undo"></i> Fonte Padrão</button>
+            <button id="contrastBtn" class="btn-primary" style="width:100%; margin-bottom:8px;"><i class="fas fa-adjust"></i> Alto Contraste</button>
+            <button id="readScreenBtn" class="btn-primary" style="width:100%; margin-bottom:8px;"><i class="fas fa-volume-up"></i> 🔊 Ler Tela Atual</button>
+            <button id="closeAccessibility" style="width:100%; background:var(--danger); color:white; border:none; border-radius:16px; padding:8px; cursor:pointer;">Fechar</button>
+        </div>
+
+        <!-- Telas -->
         <div class="screen active-screen" id="screen-dashboard">
             <div class="page-container">
                 <div class="grid-2col">
                     <div class="card"><h3><i class="fas fa-chart-line"></i> Evolução Mensal</h3><canvas id="graficoEvolucao" style="height: 300px;"></canvas></div>
                     <div class="card"><h3><i class="fas fa-chart-pie"></i> Gastos por Categoria</h3><canvas id="graficoDashboardCat" style="height: 300px;"></canvas></div>
                 </div>
-                <div class="card"><h3><i class="fas fa-clock"></i> Últimas Transações</h3><div style="overflow-x:auto;"><table id="ultimasTransacoes"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody></tbody></table></div></div>
+                <div class="card"><h3><i class="fas fa-clock"></i> Últimas Transações</h3>
+                    <div style="overflow-x:auto;"><table id="ultimasTransacoes"><thead></td><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody></tbody></table></div>
+                </div>
+                <div class="card"><h3><i class="fas fa-chart-simple"></i> Resumo do Mês</h3>
+                    <div id="resumoMes" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center;"></div>
+                </div>
             </div>
         </div>
 
-        <!-- Receitas Screen -->
         <div class="screen" id="screen-receitas">
             <div class="page-container">
-                <div class="card"><h3>Nova Receita</h3><div class="form-row"><div class="form-field"><label>Descrição</label><input type="text" id="recDesc"></div><div class="form-field"><label>Valor</label><input type="number" id="recValor" step="0.01"></div><div class="form-field"><label>Categoria</label><select id="recCategoria"><option>Salário</option><option>Freelancer</option><option>Investimentos</option></select></div><div class="form-field"><label>Data</label><input type="date" id="recData"></div><div><button class="btn-primary" id="btnAddReceita">Adicionar</button></div></div></div>
-                <div class="card"><h3>Histórico</h3><table id="tabelaReceitas"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
+                <div class="card"><h3><i class="fas fa-plus-circle"></i> Nova Receita</h3>
+                    <div class="form-row"><div class="form-field"><label>Descrição</label><input type="text" id="recDesc" placeholder="Salário, Freela"></div>
+                    <div class="form-field"><label>Valor (R$)</label><input type="number" id="recValor" step="0.01"></div>
+                    <div class="form-field"><label>Categoria</label><select id="recCategoria"><option value="salario">💰 Salário</option><option value="freelancer">💼 Freelancer</option><option value="investimentos">📈 Investimentos</option><option value="outros">✨ Outros</option></select></div>
+                    <div class="form-field"><label>Data</label><input type="date" id="recData"></div>
+                    <div><button class="btn-primary" id="btnAddReceita"><i class="fas fa-save"></i> Adicionar</button></div></div>
+                </div>
+                <div class="card"><h3><i class="fas fa-list"></i> Histórico de Receitas</h3>
+                    <div style="overflow-x:auto;"><table id="tabelaReceitas"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
+                </div>
             </div>
         </div>
 
-        <!-- Despesas Screen -->
         <div class="screen" id="screen-despesas">
             <div class="page-container">
-                <div class="card"><h3>Nova Despesa</h3><div class="form-row"><div class="form-field"><label>Descrição</label><input type="text" id="despDesc"></div><div class="form-field"><label>Valor</label><input type="number" id="despValor" step="0.01"></div><div class="form-field"><label>Categoria</label><select id="despCategoria"><option>Alimentação</option><option>Transporte</option><option>Moradia</option><option>Lazer</option></select></div><div class="form-field"><label>Data</label><input type="date" id="despData"></div><div><button class="btn-primary" id="btnAddDespesa">Adicionar</button></div></div></div>
-                <div class="card"><h3>Lista</h3><table id="tabelaDespesas"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
+                <div class="card"><h3><i class="fas fa-plus-circle"></i> Nova Despesa</h3>
+                    <div class="form-row"><div class="form-field"><label>Descrição</label><input type="text" id="despDesc"></div>
+                    <div class="form-field"><label>Valor (R$)</label><input type="number" id="despValor" step="0.01"></div>
+                    <div class="form-field"><label>Categoria</label><select id="despCategoria"><option value="alimentacao">🍽️ Alimentação</option><option value="transporte">🚗 Transporte</option><option value="veiculo">🚘 Veículo</option><option value="agua">💧 Água</option><option value="luz">⚡ Luz</option><option value="internet">🌐 Internet</option><option value="celular">📱 Celular</option><option value="lazer">🎮 Lazer</option><option value="escola">📚 Escola</option><option value="faculdade">🎓 Faculdade</option><option value="pet">🐾 Pet</option><option value="doacoes">❤️ Doações</option><option value="saude">🏥 Saúde</option><option value="moradia">🏠 Moradia</option><option value="cartao_credito">💳 Cartão</option><option value="outros">📦 Outros</option></select></div>
+                    <div class="form-field"><label>Data</label><input type="date" id="despData"></div>
+                    <div><button class="btn-primary" id="btnAddDespesa"><i class="fas fa-save"></i> Adicionar</button></div></div>
+                </div>
+                <div class="card"><h3><i class="fas fa-chart-bar"></i> Gastos por Categoria</h3><canvas id="graficoDespesasCat" style="height: 300px;"></canvas></div>
+                <div class="card"><h3><i class="fas fa-list"></i> Lista de Despesas</h3>
+                    <div style="overflow-x:auto;"><table id="tabelaDespesas"><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead><tbody></tbody></table></div>
+                </div>
             </div>
         </div>
 
-        <!-- Dependentes Screen -->
-        <div class="screen" id="screen-dependentes">
-            <div class="page-container">
-                <div class="card"><h3>Adicionar Dependente</h3><div class="form-row"><div class="form-field"><label>Nome</label><input type="text" id="depNome"></div><div class="form-field"><label>Parentesco</label><input type="text" id="depParentesco"></div><div class="form-field"><label>Gasto Mensal</label><input type="number" id="depGasto" step="0.01"></div><div><button class="btn-primary" id="btnAddDependente">Adicionar</button></div></div></div>
-                <div class="card"><table id="tabelaDependentes"><thead><tr><th>Nome</th><th>Parentesco</th><th>Gasto</th><th>Ação</th></tr></thead><tbody></tbody></table><div id="totalDepGasto" style="margin-top:20px;"></div></div>
-            </div>
-        </div>
-
-        <!-- Balancete Screen -->
-        <div class="screen" id="screen-balancete">
-            <div class="page-container">
-                <div class="card"><h3>Balancete</h3><div style="display:flex; gap:12px;"><button class="period-btn" data-period="mensal">Mensal</button><button class="period-btn" data-period="anual">Anual</button><button class="period-btn" data-period="geral">Geral</button></div><div id="balanceteContent"></div></div>
-            </div>
-        </div>
-
-        <!-- Contato Screen -->
-        <div class="screen" id="screen-contato">
-            <div class="page-container">
-                <div class="card"><h3>Fale Conosco</h3><div class="form-row"><div class="form-field"><label>Nome</label><input type="text" id="contatoNome"></div><div class="form-field"><label>Email</label><input type="email" id="contatoEmail"></div></div><div class="form-field"><label>Mensagem</label><textarea id="contatoMsg" rows="5"></textarea></div><button class="btn-primary" id="btnEnviarContato">Enviar</button></div>
-            </div>
-        </div>
-
-        <!-- Investimentos Screen -->
         <div class="screen" id="screen-investimentos">
             <div class="page-container">
                 <div class="grid-2col">
-                    <div class="card"><h3><i class="fas fa-chart-line"></i> Patrimônio Total</h3><div style="text-align:center; padding:20px;"><span style="font-size:3rem; font-weight:700; color:#667eea;" id="patrimonioTotal">R$ 0,00</span></div></div>
-                    <div class="card"><h3><i class="fas fa-plus-circle"></i> Cadastrar Ativo</h3><div class="form-row"><div class="form-field"><label>Tipo</label><select id="novoTipo"><option value="renda_fixa">Renda Fixa</option><option value="acoes">Ações</option><option value="fiis">FIIs</option><option value="cripto">Cripto</option></select></div><div class="form-field"><label>Nome</label><input type="text" id="novoNome"></div><div class="form-field"><label>Quantidade</label><input type="number" id="novoQuantidade" step="0.0001" value="1"></div><div class="form-field"><label>Preço Médio</label><input type="number" id="novoPreco" step="0.01"></div><div><button class="btn-primary" id="btnAddAtivo">Cadastrar</button></div></div></div>
+                    <div class="card"><h3><i class="fas fa-chart-line"></i> Meus Investimentos</h3>
+                        <div class="form-row"><div class="form-field"><label>Nome</label><input type="text" id="invNome" placeholder="CDB, PETR4"></div>
+                        <div class="form-field"><label>Valor (R$)</label><input type="number" id="invValor" step="0.01"></div>
+                        <div class="form-field"><label>Tipo</label><select id="invTipo"><option value="renda_fixa">📊 Renda Fixa</option><option value="acoes">📈 Ações</option><option value="fiis">🏢 FIIs</option><option value="cripto">₿ Cripto</option></select></div>
+                        <div><button class="btn-primary" id="btnAddInvest"><i class="fas fa-plus"></i> Adicionar</button></div></div>
+                        <div id="listaInvestimentos" style="margin-top: 20px; max-height: 300px; overflow-y: auto;"></div>
+                        <div style="margin-top: 20px; padding: 16px; background:var(--bg-primary); border-radius:16px; text-align:center;"><strong>Total Investido:</strong> <span id="totalInvestido" style="font-size:1.5rem; color:var(--accent-start);">R$ 0,00</span></div>
+                    </div>
+                    <div class="card"><h3><i class="fas fa-chart-simple"></i> Bolsa de Valores</h3><div id="stocksList"></div></div>
                 </div>
-                <div class="investment-section" data-type="renda_fixa"><div class="investment-header"><span>📊 Renda Fixa</span><i class="fas fa-chevron-down"></i></div><div class="investment-content" id="rendaFixaContent"></div></div>
-                <div class="investment-section" data-type="acoes"><div class="investment-header"><span>📈 Ações</span><i class="fas fa-chevron-down"></i></div><div class="investment-content" id="acoesContent"></div></div>
-                <div class="investment-section" data-type="fiis"><div class="investment-header"><span>🏢 FIIs</span><i class="fas fa-chevron-down"></i></div><div class="investment-content" id="fiisContent"></div></div>
-                <div class="investment-section" data-type="cripto"><div class="investment-header"><span>₿ Criptomoedas</span><i class="fas fa-chevron-down"></i></div><div class="investment-content" id="criptoContent"></div></div>
-                <div class="grid-2col"><div class="card"><h3>📊 Cotações</h3><div id="stocksList"></div></div><div class="card"><h3>🔗 Monitorar Ações</h3><div class="form-row"><div class="form-field"><label>Código</label><input type="text" id="monitorSymbol"></div><div><button class="btn-primary" id="btnAddMonitor">Adicionar</button></div></div><div id="monitorList"></div></div></div>
-                <div class="card"><h3>📰 Notícias</h3><div id="newsList"></div></div>
+                <div class="card"><h3><i class="fas fa-newspaper"></i> 📰 Notícias de Investimentos</h3><div id="newsList"></div></div>
             </div>
         </div>
 
-        <div class="footer"><div class="footer-content"><div><h4>FinançaMaster</h4><p>Controle financeiro acessível</p></div><div><h4>Contato</h4><p>contato@financamaster.com<br>(11) 4002-8922</p></div></div><div class="copyright">© 2025 FinançaMaster</div></div>
-    </div>
+        <div class="screen" id="screen-dependentes">
+            <div class="page-container">
+                <div class="card"><h3><i class="fas fa-user-plus"></i> Adicionar Dependente</h3>
+                    <div class="form-row"><div class="form-field"><label>Nome</label><input type="text" id="depNome"></div>
+                    <div class="form-field"><label>Parentesco</label><input type="text" id="depParentesco"></div>
+                    <div class="form-field"><label>Gasto Mensal (R$)</label><input type="number" id="depGasto" step="0.01"></div>
+                    <div><button class="btn-primary" id="btnAddDependente"><i class="fas fa-plus"></i> Adicionar</button></div></div>
+                </div>
+                <div class="card"><h3><i class="fas fa-users"></i> Lista de Dependentes</h3>
+                    <table id="tabelaDependentes"><thead><tr><th>Nome</th><th>Parentesco</th><th>Gasto Mensal</th><th>Ação</th></tr></thead><tbody></tbody></table>
+                    <div style="margin-top:20px; padding:16px; background:var(--bg-primary); border-radius:16px;"><strong>Impacto Financeiro Total:</strong> <span id="totalDepGasto">R$ 0,00</span>/mês</div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Chatbot -->
-    <div class="chatbot-container"><button class="chatbot-toggle" id="chatbotToggle"><i class="fas fa-robot"></i></button><div class="chatbot-window" id="chatbotWindow"><div class="chatbot-header"><h4><i class="fas fa-robot"></i> Assistente Financeiro</h4><button id="chatbotClose" style="background:none; border:none; color:white; font-size:20px;">&times;</button></div><div class="chatbot-messages" id="chatbotMessages"><div class="message bot"><div class="message-content">Olá! Sou seu assistente. Posso ajudar com dúvidas sobre finanças, investimentos, economia e uso do sistema. Pergunte algo!</div></div></div><div class="chatbot-input"><input type="text" id="chatbotInput" placeholder="Digite sua pergunta..."><button id="chatbotSend"><i class="fas fa-paper-plane"></i></button></div></div></div>
-    <div class="speech-bubble" id="speechBubble"></div>
+        <div class="screen" id="screen-balancete">
+            <div class="page-container">
+                <div class="card"><h3><i class="fas fa-balance-scale"></i> Balancete Financeiro</h3>
+                    <div style="display:flex; gap:12px; margin-bottom:24px;">
+                        <button class="period-btn active" data-period="mensal" style="padding:10px 20px; border:none; border-radius:20px; cursor:pointer; background:var(--bg-primary); color:var(--text-primary);">📅 Mensal</button>
+                        <button class="period-btn" data-period="anual" style="padding:10px 20px; border:none; border-radius:20px; cursor:pointer; background:var(--bg-primary); color:var(--text-primary);">📈 Anual</button>
+                        <button class="period-btn" data-period="geral" style="padding:10px 20px; border:none; border-radius:20px; cursor:pointer; background:var(--bg-primary); color:var(--text-primary);">📊 Geral</button>
+                    </div>
+                    <div id="balanceteContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen" id="screen-contato">
+            <div class="page-container">
+                <div class="card"><h3><i class="fas fa-envelope"></i> Fale Conosco</h3>
+                    <div class="form-row"><div class="form-field"><label>Nome</label><input type="text" id="contatoNome"></div><div class="form-field"><label>E-mail</label><input type="email" id="contatoEmail"></div><div class="form-field"><label>Assunto</label><input type="text" id="contatoAssunto"></div></div>
+                    <div class="form-field"><label>Mensagem</label><textarea id="contatoMsg" rows="5"></textarea></div>
+                    <button class="btn-primary" id="btnEnviarContato"><i class="fas fa-paper-plane"></i> Enviar Mensagem</button>
+                    <div style="margin-top:32px; padding-top:24px; border-top:1px solid var(--border-color);"><h3><i class="fas fa-info-circle"></i> Sobre o FinançaMaster</h3><p style="margin-top:16px; line-height:1.6;">Plataforma completa para gestão financeira pessoal. Controle gastos, receitas, investimentos e acompanhe o mercado financeiro em tempo real.</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer"><div class="footer-content"><div class="footer-section"><h4>FinançaMaster</h4><p>Controle financeiro inteligente</p></div><div class="footer-section"><h4>Contato</h4><p>contato@financamaster.com<br>(11) 4002-8922</p></div><div class="footer-section"><h4>Redes Sociais</h4><div class="social-links" style="display:flex; gap:12px;"><i class="fab fa-instagram"></i> <i class="fab fa-facebook"></i> <i class="fab fa-linkedin"></i></div></div></div><div class="copyright" style="text-align:center; margin-top:32px;">© 2025 FinançaMaster</div></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
