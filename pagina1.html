@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Contas a Pagar e Receber</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --text: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --radius: 8px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); line-height: 1.5; padding: 20px; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    p { color: var(--text-light); }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab {
+      padding: 10px 16px; border: none; background: var(--card); cursor: pointer;
+      border-radius: var(--radius); font-weight: 500; box-shadow: var(--shadow);
+      transition: 0.2s;
+    }
+    .tab.active { background: var(--primary); color: white; }
+    .tab:hover:not(.active) { background: #e5e7eb; }
+
+    .card { background: var(--card); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+    .form-group { display: flex; flex-direction: column; }
+    label { font-size: 0.85rem; color: var(--text-light); margin-bottom: 4px; font-weight: 500; }
+    input, select {
+      padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+      font-size: 0.95rem; transition: 0.2s;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+
+    .btn { padding: 10px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 500; transition: 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger { background: var(--danger); color: white; padding: 6px 10px; font-size: 0.85rem; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-secondary { background: #e5e7eb; color: var(--text); padding: 6px 10px; font-size: 0.85rem; }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    .actions { display: flex; gap: 8px; }
+    .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .summary-item { flex: 1; min-width: 150px; padding: 12px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+    .summary-item h3 { font-size: 0.9rem; color: var(--text-light); margin-bottom: 4px; }
+    .summary-item span { font-size: 1.3rem; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f9fafb; font-weight: 600; font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; }
+    tr:last-child td { border-bottom: none; }
+    .status { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; display: inline-block; }
+    .status-pendente { background: #fef3c7; color: #92400e; }
+    .status-vencido { background: #fee2e2; color: #991b1b; }
+    .status-pago { background: #d1fae5; color: #065f46; }
+
+    .hidden { display: none; }
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .filter-bar { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>💰 Contas a Pagar & Receber</h1>
+      <p>Sistema simples de gestão financeira com persistência local</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchView('payable')">Contas a Pagar</button>
+      <button class="tab" onclick="switchView('receivable')">Contas a Receber</button>
+    </div>
+
+    <div class="card">
+      <form id="accountForm" class="form-grid">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="description">Descrição</label>
+          <input type="text" id="description" required placeholder="Ex: Conta de luz, Venda à prazo...">
+        </div>
+        <div class="form-group">
+          <label for="amount">Valor (R$)</label>
+          <input type="number" id="amount" step="0.01" min="0.01" required placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label for="dueDate">Data de Vencimento</label>
+          <input type="date" id="dueDate" required>
+        </div>
+        <div class="form-group">
+          <label for="method">Forma de Pagamento/Recebimento</label>
+          <select id="method" required>
+            <option value="">Selecione...</option>
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Boleto">Boleto</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Cartão de Débito">Cartão de Débito</option>
+            <option value="Cartão de Crédito">Cartão de Crédito</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div class="actions">
+            <button type="submit" class="btn btn-primary" id="submitBtn">Salvar</button>
+            <button type="button" class="btn btn-secondary" id="cancelBtn" style="display:none;" onclick="resetForm()">Cancelar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Filtrar por Método</label>
+        <select id="filterMethod" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option value="Pix">Pix</option>
+          <option value="Dinheiro">Dinheiro</option>
+          <option value="Boleto">Boleto</option>
+          <option value="Cheque">Cheque</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Filtrar por Status</label>
+        <select id="filterStatus" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option value="Pendente">Pendente</option>
+          <option value="Pago/Recebido">Pago/Recebido</option>
+          <option value="Vencido">Vencido</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-item">
+        <h3>Total Pendente</h3>
+        <span id="totalPending">R$ 0,00</span>
+      </div>
+      <div class="summary-item">
+        <h3>Total Pago/Recebido</h3>
+        <span id="totalPaid">R$ 0,00</span>
+      </div>
+      <div class="summary-item">
+        <h3>Total Vencido</h3>
+        <span id="totalOverdue">R$ 0,00</span>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Método</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Linhas geradas via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Configurações
+    const STORAGE_KEY = 'sistema_financeiro_v1';
+    let currentView = 'payable'; // payable | receivable
+    let editingId = null;
+
+    // Utilitários
+    const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    const formatDate = (dateStr) => {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}/${m}/${y}`;
+    };
+    const getToday = () => new Date().toISOString().split('T')[0];
+    const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+    // Estado
+    function loadAccounts() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    }
+    function saveAccounts(accounts) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+    }
+
+    // Lógica de Status
+    function updateStatus(account) {
+      if (account.status === 'Pago/Recebido') return account;
+      const today = getToday();
+      account.status = account.dueDate < today ? 'Vencido' : 'Pendente';
+      return account;
+    }
+
+    // Renderização
+    function renderTable() {
+      const accounts = loadAccounts().map(updateStatus);
+      const filtered = accounts.filter(a => {
+        if (a.type !== currentView) return false;
+        const methodFilter = document.getElementById('filterMethod').value;
+        const statusFilter = document.getElementById('filterStatus').value;
+        if (methodFilter && a.method !== methodFilter) return false;
+        if (statusFilter && a.status !== statusFilter) return false;
+        return true;
+      });
+
+      // Salvar status atualizado
+      saveAccounts(accounts);
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px;">Nenhuma conta encontrada.</td></tr>`;
+      } else {
+        filtered.forEach(acc => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${acc.description}</td>
+            <td>${formatCurrency(acc.amount)}</td>
+            <td>${formatDate(acc.dueDate)}</td>
+            <td>${acc.method}</td>
+            <td><span class="status status-${acc.status.toLowerCase().replace('/', '')}">${acc.status}</span></td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-secondary" onclick="togglePaid('${acc.id}')">${acc.status === 'Pago/Recebido' ? 'Desfazer' : 'Confirmar'}</button>
+                <button class="btn btn-secondary" onclick="editAccount('${acc.id}')">Editar</button>
+                <button class="btn btn-danger" onclick="deleteAccount('${acc.id}')">Excluir</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      updateSummary(accounts);
+    }
+
+    function updateSummary(accounts) {
+      const viewAccounts = accounts.filter(a => a.type === currentView);
+      const pending = viewAccounts.filter(a => a.status === 'Pendente').reduce((sum, a) => sum + a.amount, 0);
+      const paid = viewAccounts.filter(a => a.status === 'Pago/Recebido').reduce((sum, a) => sum + a.amount, 0);
+      const overdue = viewAccounts.filter(a => a.status === 'Vencido').reduce((sum, a) => sum + a.amount, 0);
+
+      document.getElementById('totalPending').textContent = formatCurrency(pending);
+      document.getElementById('totalPaid').textContent = formatCurrency(paid);
+      document.getElementById('totalOverdue').textContent = formatCurrency(overdue);
+    }
+
+    // Ações CRUD
+    document.getElementById('accountForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const accounts = loadAccounts();
+      const newAccount = {
+        id: editingId || generateId(),
+        type: currentView,
+        description: document.getElementById('description').value.trim(),
+        amount: parseFloat(document.getElementById('amount').value),
+        dueDate: document.getElementById('dueDate').value,
+        method: document.getElementById('method').value,
+        status: 'Pendente',
+        createdAt: new Date().toISOString()
+      };
+
+      if (editingId) {
+        const idx = accounts.findIndex(a => a.id === editingId);
+        if (idx !== -1) accounts[idx] = { ...accounts[idx], ...newAccount, id: editingId };
+      } else {
+        accounts.push(newAccount);
+      }
+
+      saveAccounts(accounts);
+      resetForm();
+      renderTable();
+    });
+
+    function togglePaid(id) {
+      const accounts = loadAccounts();
+      const acc = accounts.find(a => a.id === id);
+      if (acc) {
+        acc.status = acc.status === 'Pago/Recebido' ? 'Pendente' : 'Pago/Recebido';
+        saveAccounts(accounts);
+        renderTable();
+      }
+    }
+
+    function editAccount(id) {
+      const accounts = loadAccounts();
+      const acc = accounts.find(a => a.id === id);
+      if (!acc) return;
+
+      document.getElementById('editId').value = acc.id;
+      document.getElementById('description').value = acc.description;
+      document.getElementById('amount').value = acc.amount;
+      document.getElementById('dueDate').value = acc.dueDate;
+      document.getElementById('method').value = acc.method;
+      document.getElementById('submitBtn').textContent = 'Atualizar';
+      document.getElementById('cancelBtn').style.display = 'inline-block';
+      editingId = acc.id;
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function deleteAccount(id) {
+      if (!confirm('Tem certeza que deseja excluir esta conta?')) return;
+      let accounts = loadAccounts();
+      accounts = accounts.filter(a => a.id !== id);
+      saveAccounts(accounts);
+      if (editingId === id) resetForm();
+      renderTable();
+    }
+
+    function resetForm() {
+      document.getElementById('accountForm').reset();
+      document.getElementById('editId').value = '';
+      document.getElementById('submitBtn').textContent = 'Salvar';
+      document.getElementById('cancelBtn').style.display = 'none';
+      editingId = null;
+    }
+
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      resetForm();
+      renderTable();
+    }
+
+    // Inicialização
+    window.addEventListener('DOMContentLoaded', renderTable);
+  </script>
+</body>
+</html>

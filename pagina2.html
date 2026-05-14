@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Transações 💳</title>
+  <!-- SheetJS (Exportar Excel) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF + AutoTable (Exportar PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #2563eb; --success: #10b981; --warning: #f59e0b;
+      --danger: #ef4444; --bg: #f8fafc; --card: #ffffff;
+      --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; }
+    header { text-align: center; margin-bottom: 25px; }
+    h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 5px; }
+    section { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+    h2 { margin-bottom: 15px; color: #334155; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+    
+    form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    input, select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+    input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+    
+    .form-actions { grid-column: 1 / -1; display: flex; gap: 10px; }
+    button { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: 600; transition: 0.2s; }
+    button:hover { filter: brightness(0.9); transform: translateY(-1px); }
+    #submit-btn { background: var(--primary); flex: 1; }
+    #clear-btn { background: #64748b; }
+    
+    .actions-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    #export-excel { background: var(--success); }
+    #export-pdf { background: #8b5cf6; }
+    #simular-boleto { background: var(--warning); color: #000; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; color: #475569; }
+    tr:hover { background: #f8fafc; }
+    .status-pago { color: var(--success); font-weight: 600; }
+    .status-pendente { color: var(--warning); font-weight: 600; }
+    .status-cancelado { color: var(--danger); font-weight: 600; }
+    .edit-btn { background: #3b82f6; padding: 6px 10px; font-size: 0.85rem; }
+    .delete-btn { background: var(--danger); padding: 6px 10px; font-size: 0.85rem; margin-left: 5px; }
+    
+    .empty-state { text-align: center; padding: 30px; color: var(--muted); }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 650px; width: 90%; position: relative; max-height: 90vh; overflow-y: auto; }
+    .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #64748b; }
+    #boleto-content { border: 2px dashed #cbd5e1; padding: 20px; margin: 15px 0; background: #fafafa; font-family: 'Courier New', monospace; }
+    .boleto-line { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dotted #e2e8f0; }
+    .barcode { letter-spacing: 4px; font-size: 18px; text-align: center; padding: 12px; background: #e2e8f0; border-radius: 6px; margin: 15px 0; font-weight: bold; }
+    #print-boleto { background: #0f172a; width: 100%; margin-top: 10px; }
+    
+    @media (max-width: 768px) { form { grid-template-columns: 1fr; } table { font-size: 0.85rem; } .actions-bar { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>💳 Sistema de Cartão de Crédito e Débito</h1>
+    <p style="color:var(--muted); margin-top:5px;">CRUD • Relatórios Excel/PDF • Simulação de Boleto</p>
+  </header>
+
+  <main>
+    <section id="form-section">
+      <h2>📝 Adicionar / Editar Transação</h2>
+      <form id="transaction-form">
+        <input type="hidden" id="edit-id">
+        <select id="type" required>
+          <option value="Crédito">💳 Crédito</option>
+          <option value="Débito">💳 Débito</option>
+        </select>
+        <input type="text" id="holder" placeholder="Nome do Titular" required>
+        <input type="text" id="card-last4" placeholder="Últimos 4 dígitos" pattern="\d{4}" maxlength="4" required>
+        <input type="number" id="amount" placeholder="Valor (R$)" step="0.01" min="0.01" required>
+        <input type="date" id="date" required>
+        <select id="status" required>
+          <option value="Pendente">⏳ Pendente</option>
+          <option value="Pago">✅ Pago</option>
+          <option value="Cancelado">❌ Cancelado</option>
+        </select>
+        <input type="text" id="description" placeholder="Descrição (ex: Supermercado, Assinatura)">
+        <div class="form-actions">
+          <button type="submit" id="submit-btn">Salvar Transação</button>
+          <button type="button" id="clear-btn">Limpar</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="table-section">
+      <h2>📋 Transações Registradas</h2>
+      <div class="actions-bar">
+        <button id="export-excel">📊 Exportar Excel</button>
+        <button id="export-pdf">📄 Exportar PDF</button>
+        <button id="simular-boleto">🧾 Simular Boleto (Última Transação)</button>
+      </div>
+      <table id="transactions-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Tipo</th><th>Titular</th><th>Cartão</th><th>Valor</th><th>Data</th><th>Status</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none;">Nenhuma transação cadastrada ainda.</div>
+    </section>
+  </main>
+
+  <!-- Modal Boleto -->
+  <div id="boleto-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>🧾 Boleto Simulado</h2>
+      <div id="boleto-content"></div>
+      <button id="print-boleto">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+
+  <script>
+    // 🔐 Estado & Configurações
+    const STORAGE_KEY = 'transactions_v1';
+    let transactions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    
+    const form = document.getElementById('transaction-form');
+    const tableBody = document.getElementById('table-body');
+    const emptyState = document.getElementById('empty-state');
+    const submitBtn = document.getElementById('submit-btn');
+    const editIdInput = document.getElementById('edit-id');
+    const boletoModal = document.getElementById('boleto-modal');
+
+    // 🛠️ Utilitários
+    const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    const formatDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
+    document.getElementById('date').valueAsDate = new Date();
+
+    const saveToStorage = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+
+    // 🖼️ Renderizar Tabela
+    function renderTable() {
+      tableBody.innerHTML = '';
+      emptyState.style.display = transactions.length === 0 ? 'block' : 'none';
+
+      transactions.forEach((t, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${t.id.toString().slice(-4)}</td>
+          <td>${t.type}</td>
+          <td>${t.holder}</td>
+          <td>**** ${t.cardLast4}</td>
+          <td>${formatBRL(t.amount)}</td>
+          <td>${formatDate(t.date)}</td>
+          <td><span class="status-${t.status.toLowerCase()}">${t.status}</span></td>
+          <td>
+            <button class="edit-btn" onclick="editTransaction(${idx})">✏️</button>
+            <button class="delete-btn" onclick="deleteTransaction(${idx})">🗑️</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // ➕ Salvar (Criar/Editar)
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = {
+        id: editIdInput.value || Date.now(),
+        type: document.getElementById('type').value,
+        holder: document.getElementById('holder').value.trim(),
+        cardLast4: document.getElementById('card-last4').value,
+        amount: parseFloat(document.getElementById('amount').value),
+        date: document.getElementById('date').value,
+        status: document.getElementById('status').value,
+        description: document.getElementById('description').value.trim()
+      };
+
+      if (editIdInput.value) {
+        const idx = transactions.findIndex(t => t.id == editIdInput.value);
+        transactions[idx] = data;
+        editIdInput.value = '';
+        submitBtn.textContent = 'Salvar Transação';
+      } else {
+        transactions.push(data);
+      }
+
+      saveToStorage();
+      form.reset();
+      document.getElementById('date').valueAsDate = new Date();
+      renderTable();
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      form.reset();
+      editIdInput.value = '';
+      submitBtn.textContent = 'Salvar Transação';
+      document.getElementById('date').valueAsDate = new Date();
+    });
+
+    // ✏️ Editar
+    window.editTransaction = (idx) => {
+      const t = transactions[idx];
+      document.getElementById('type').value = t.type;
+      document.getElementById('holder').value = t.holder;
+      document.getElementById('card-last4').value = t.cardLast4;
+      document.getElementById('amount').value = t.amount;
+      document.getElementById('date').value = t.date;
+      document.getElementById('status').value = t.status;
+      document.getElementById('description').value = t.description || '';
+      editIdInput.value = t.id;
+      submitBtn.textContent = 'Atualizar Transação';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // 🗑️ Excluir
+    window.deleteTransaction = (idx) => {
+      if (confirm('Tem certeza que deseja excluir esta transação?')) {
+        transactions.splice(idx, 1);
+        saveToStorage();
+        renderTable();
+      }
+    };
+
+    // 📊 Exportar Excel
+    document.getElementById('export-excel').addEventListener('click', () => {
+      if (!transactions.length) return alert('Nenhuma transação para exportar.');
+      const wsData = [['ID', 'Tipo', 'Titular', 'Cartão', 'Valor', 'Data', 'Status', 'Descrição']];
+      transactions.forEach(t => {
+        wsData.push([t.id, t.type, t.holder, `**** ${t.cardLast4}`, t.amount, t.date, t.status, t.description || '']);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+      XLSX.writeFile(wb, `transacoes_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+
+    // 📄 Exportar PDF
+    document.getElementById('export-pdf').addEventListener('click', () => {
+      if (!transactions.length) return alert('Nenhuma transação para exportar.');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont('helvetica', 'bold');
+      doc.text('Relatório de Transações', 14, 15);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} | Total: ${transactions.length} registro(s)`, 14, 22);
+
+      const tableData = transactions.map(t => [
+        t.id.toString().slice(-4), t.type, t.holder, `**** ${t.cardLast4}`, 
+        formatBRL(t.amount), formatDate(t.date), t.status
+      ]);
+
+      doc.autoTable({
+        head: [['ID', 'Tipo', 'Titular', 'Cartão', 'Valor', 'Data', 'Status']],
+        body: tableData,
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] }
+      });
+      doc.save(`transacoes_${new Date().toISOString().slice(0,10)}.pdf`);
+    });
+
+    // 🧾 Simular Boleto
+    document.getElementById('simular-boleto').addEventListener('click', () => {
+      if (!transactions.length) return alert('Adicione pelo menos uma transação para simular o boleto.');
+      const t = transactions[transactions.length - 1];
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+      
+      // Código de barras fictício (padrão FEBRABAN para fins educacionais)
+      const valorCentavos = Math.floor(t.amount * 100).toString().padStart(10, '0');
+      const barcode = `23793.38128 60000.000003 00000.000400 1 84330000${valorCentavos}`;
+      
+      document.getElementById('boleto-content').innerHTML = `
+        <div class="boleto-line"><span>Beneficiário:</span><strong>Sistema de Transações LTDA - CNPJ: 00.000.000/0001-00</strong></div>
+        <div class="boleto-line"><span>Pagador:</span><strong>${t.holder}</strong></div>
+        <div class="boleto-line"><span>Vencimento:</span><strong>${dueDate.toLocaleDateString('pt-BR')}</strong></div>
+        <div class="boleto-line"><span>Valor Documento:</span><strong>${formatBRL(t.amount)}</strong></div>
+        <div class="boleto-line"><span>Nosso Número:</span><strong>TX-${t.id.toString().slice(-8)}</strong></div>
+        <div class="barcode">${barcode}</div>
+        <small style="display:block; text-align:center; color:#64748b; margin-top:10px;">⚠️ Código de barras simulado. Não possui validade bancária real.</small>
+      `;
+      boletoModal.classList.add('active');
+    });
+
+    // 🔲 Modal & Impressão
+    document.querySelector('.close-modal').addEventListener('click', () => boletoModal.classList.remove('active'));
+    window.addEventListener('click', (e) => { if (e.target === boletoModal) boletoModal.classList.remove('active'); });
+
+    document.getElementById('print-boleto').addEventListener('click', () => {
+      const content = document.getElementById('boleto-content').innerHTML;
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html><head><title>Boleto Simulado</title><style>
+          body { font-family: 'Courier New', monospace; padding: 20px; max-width: 800px; margin: auto; }
+          .boleto-line { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dotted #ccc; padding-bottom: 4px; }
+          .barcode { letter-spacing: 4px; font-size: 18px; text-align: center; padding: 12px; background: #f0f0f0; border-radius: 4px; margin: 15px 0; }
+          strong { font-weight: bold; } small { color: #666; }
+        </style></head><body>${content}<br><button onclick="window.print()" style="padding:10px 20px; margin-top:10px; background:#0f172a; color:white; border:none; border-radius:6px; cursor:pointer;">🖨️ Imprimir Agora</button></body></html>
+      `);
+      printWindow.document.close();
+    });
+
+    // 🚀 Inicializar
+    renderTable();
+  </script>
+</body>
+</html>
